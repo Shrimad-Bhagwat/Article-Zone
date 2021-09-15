@@ -1,0 +1,14 @@
+{% extends 'layout.html' %}
+{% block title %}
+{{article.title}}
+{% endblock title %}
+{% block body%}
+
+    <a href = "/articles"><button type="button" class="btn btn-outline-dark my-3">Back</button></a>
+    
+    <h1>{{article.title}}</h1>
+    <strong><h5>Author : {{article.author}}  &nbsp; | &nbsp; Created : {{article.create_date}}</h5></strong>
+    <hr> 
+    <p>{{article.body | safe }}</p>
+    
+{% endblock body %}
