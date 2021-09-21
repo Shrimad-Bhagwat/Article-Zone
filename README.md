@@ -1,6 +1,6 @@
 # Article-Zone
 
-## [Setup](#setup)
+## [Setup](#setup-1)
 
 ## Home
 ![Article Zone Home](./img/Home.png)
