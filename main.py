@@ -15,7 +15,7 @@ app = Flask(__name__)
 
 #---------------------------------------------------------------------------
 con = sqlite3.connect("articlezone.db")  
-print("Database opened successfully") 
+# print("Database opened successfully") 
 con.execute("create table if not exists articles (id INTEGER PRIMARY KEY AUTOINCREMENT, title varchar(255) NOT NULL, author varchar(100),body text, create_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")  
 
 con.execute("create table if not exists users (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, name varchar(100), email varchar(100), username varchar(30), password varchar(100),register_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP )")
@@ -105,7 +105,7 @@ def register():
         name = form.name.data
         email = form.email.data
         username = form.username.data
-        password = sha256_crypt.encrypt(str(form.password.data))
+        password = sha256_crypt.hash(str(form.password.data))
 
         con = sqlite3.connect("articlezone.db") 
         query = "INSERT INTO users(name,email,username,password) VALUES(?,?,?,?)"
@@ -131,10 +131,15 @@ def login():
         result = cur.execute("Select * from users where username = ?",[username])
 
         if(result):
-            data = list(cur.fetchone())
-            print("-------\n---\n-----\n--------------")
-            print(data)
-            password = data[4]
+            data_values = list(cur.fetchone())
+            data_keys = ['id','name','email','username','password','register_date']
+            data={}
+            for key,value in enumerate(data_keys):
+                data[value]=data_values[key]
+
+            con.close()
+           
+            password = data['password']
 
             if(sha256_crypt.verify(password_candidate,password)):
                 # app.logger.info('PASSWORD MATCHED')
@@ -288,6 +293,6 @@ def delete_article(id):
 
 if (__name__ == '__main__'):
     app.secret_key = "secret123"
-    app.run(debug=False)
+    app.run(debug=True)
 
 
