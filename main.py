@@ -113,7 +113,7 @@ def register():
         con.execute(query,data)
         con.commit()
 
-        con.close()
+        # con.close()
         flash("You are now Registered!","success")
         return redirect(url_for('login'))
     return render_template('register.html',form = form)
@@ -223,7 +223,7 @@ def add_article():
         #Create cursor
         con = sqlite3.connect("articlezone.db") 
         cur = con.cursor()
-        print(session['username'])
+        # print(session['username'])
         data = (title,body,session['username'])
         cur.execute("INSERT INTO articles(title,body,author) VALUES(?,?,?)",data)
         con.commit()
@@ -292,7 +292,8 @@ def delete_article(id):
 
 
 if (__name__ == '__main__'):
-    app.secret_key = "secret123"
+    app.secret_key = '8f42a73054b1749f8f58848be5e6502c'
     app.run(debug=True)
-
+    app.config['TESTING'] = True
+    app.config.from_object(__name__)
 
