@@ -1,27 +1,33 @@
 from os import name
 import re
+import sqlite3
 from flask import Flask,render_template,flash,redirect,url_for, session,logging,request
 from flask.templating import render_template_string
-# from data import Articles
-from flask_mysqldb import MySQL
 from wtforms import Form,StringField,TextAreaField,PasswordField,validators
 from passlib.hash import sha256_crypt
 from functools import wraps
 
+from datetime import datetime
 
 app = Flask(__name__)
 
-# Config MySQL
-app.config['MYSQL_HOST'] = 'localhost'
-app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = 'mysql'
-app.config['MYSQL_DB'] = 'myflaskapp'
-app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 
-# init MySQL
-mysql = MySQL(app)
 
-# Articles = Articles()
+#---------------------------------------------------------------------------
+con = sqlite3.connect("articlezone.db")  
+print("Database opened successfully") 
+con.execute("create table if not exists articles (id INTEGER PRIMARY KEY AUTOINCREMENT, title varchar(255) NOT NULL, author varchar(100),body text, create_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")  
+
+con.execute("create table if not exists users (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, name varchar(100), email varchar(100), username varchar(30), password varchar(100),register_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP )")
+
+cur = con.cursor()
+
+con.close()
+#---------------------------------------------------------------------------
+
+
+
+
 
 #Index
 @app.route('/')
@@ -36,36 +42,49 @@ def about():
 #Articles
 @app.route('/articles')
 def articles():
-        #Create Cursor
-    cur =mysql.connection.cursor()
+    #Create Cursor
+    con = sqlite3.connect("articlezone.db") 
 
     #Get Articles
+    cur = con.cursor()
     result = cur.execute("Select * from articles")
+    articles_list = cur.fetchall()
+    list_articles = []
+    dict={}
+    article_keys = ['id','title','author','content','time']
     
-    articles = cur.fetchall()
+    for tuple in articles_list:
+        for key,value in enumerate(article_keys):
+            dict[value]=tuple[key]
+        list_articles.append(dict)  
+        dict={}  
 
-    if result > 0:
-        return render_template('articles.html',articles = articles)
+    if result:
+        return render_template('articles.html',articles = list_articles)
     else:
         msg = "No Articles Found"
         return render_template('articles.html',msg = msg)
     #Close connection
-    cur.close()
+    con.close()
 
 #Article
 @app.route('/article/<string:id>/')
 def article(id):
-        #Create Cursor
-    cur =mysql.connection.cursor()
+    #Create Cursor
+    con = sqlite3.connect("articlezone.db") 
 
     #Get Article
-    result = cur.execute("Select * from articles where id=%s",[id])
-    
-    article = cur.fetchone()
+    id = int(id)
+    cur = con.cursor()
+    result = cur.execute("Select * from articles where id=?",[id])
+    article_values = list(cur.fetchone())
+    article_keys = ['id','title','author','content','time']
+    article={}
+    for key,value in enumerate(article_keys):
+            article[value]=article_values[key]
 
+    con.close()
     return render_template('article.html',article=article)
-    #Close connection
-    cur.close()
 
 
 #Register Form
@@ -88,11 +107,13 @@ def register():
         username = form.username.data
         password = sha256_crypt.encrypt(str(form.password.data))
 
-        cur = mysql.connection.cursor()
-        cur.execute("INSERT INTO users(name,email,username,password) VALUES(%s,%s,%s,%s)",(name,email,username,password))
-        mysql.connection.commit()
+        con = sqlite3.connect("articlezone.db") 
+        query = "INSERT INTO users(name,email,username,password) VALUES(?,?,?,?)"
+        data = (name,email,username,password)
+        con.execute(query,data)
+        con.commit()
 
-        cur.close()
+        con.close()
         flash("You are now Registered!","success")
         return redirect(url_for('login'))
     return render_template('register.html',form = form)
@@ -105,12 +126,15 @@ def login():
         username = request.form['username']
         password_candidate = request.form['password']
         
-        cur = mysql.connection.cursor()
-        result = cur.execute("Select * from users where username = %s",[username])
+        con = sqlite3.connect("articlezone.db") 
+        cur = con.cursor()
+        result = cur.execute("Select * from users where username = ?",[username])
 
-        if(result > 0):
-            data = cur.fetchone()
-            password = data['password']
+        if(result):
+            data = list(cur.fetchone())
+            print("-------\n---\n-----\n--------------")
+            print(data)
+            password = data[4]
 
             if(sha256_crypt.verify(password_candidate,password)):
                 # app.logger.info('PASSWORD MATCHED')
@@ -123,7 +147,7 @@ def login():
                 error = "Password not matched"
                 return render_template('login.html',error=error)
                 # app.logger.info('PASSWORD NOT MATCHED')
-            cur.close()
+            con.close()
         else:
             error = "Username not found"
             return render_template('login.html',error=error)
@@ -153,15 +177,24 @@ def logout():
 @is_logged_in
 def dashboard():
     #Create Cursor
-    cur =mysql.connection.cursor()
-
+    con = sqlite3.connect("articlezone.db") 
+    cur = con.cursor()
     #Get Articles
+    cur = con.cursor()
     result = cur.execute("Select * from articles")
+    articles_list = cur.fetchall()
+    list_articles = []
+    dict={}
+    article_keys = ['id','title','author','content','time']
     
-    articles = cur.fetchall()
-
-    if result > 0:
-        return render_template('dashboard.html',articles = articles)
+    for tuple in articles_list:
+        for key,value in enumerate(article_keys):
+            dict[value]=tuple[key]
+        list_articles.append(dict)  
+        dict={}  
+            
+    if result:
+        return render_template('dashboard.html',articles = list_articles)
     else:
         msg = "No Articles Found"
         return render_template('dashboard.html',msg = msg)
@@ -183,13 +216,13 @@ def add_article():
         body = form.body.data
 
         #Create cursor
-        cur = mysql.connection.cursor()
-
-        cur.execute("INSERT INTO articles(title,body,author) VALUES(%s,%s,%s)",(title,body,session['username']))
-
-        mysql.connection.commit()
-
-        cur.close()
+        con = sqlite3.connect("articlezone.db") 
+        cur = con.cursor()
+        print(session['username'])
+        data = (title,body,session['username'])
+        cur.execute("INSERT INTO articles(title,body,author) VALUES(?,?,?)",data)
+        con.commit()
+        con.close()
 
         flash("Article Created","success")
 
@@ -201,32 +234,34 @@ def add_article():
 @is_logged_in
 def edit_article(id):
     #Create Cursor
-    cur = mysql.connection.cursor()
-
+    con = sqlite3.connect("articlezone.db") 
+    cur = con.cursor()
     #Get User by ID
-    result = cur.execute("Select * from articles where id=%s",[id])
-
-    article = cur.fetchone()
+    cur.execute("Select * from articles where id=?",[id])
+    article_values = list(cur.fetchone())
+    article_keys = ['id','title','author','content','time']
+    article={}
+    for key,value in enumerate(article_keys):
+            article[value]=article_values[key]
 
     #Get Form
     form = ArticleForm(request.form)
+
     #Popular Article form fields
     form.title.data = article['title']
-    form.body.data = article['body']
-
+    form.body.data = article['content']
 
     if request.method == "POST" and form.validate():
         title = request.form['title']
         body =request.form['body']
 
         #Create cursor
-        cur = mysql.connection.cursor()
+        con = sqlite3.connect("articlezone.db") 
+        cur = con.cursor()
+        cur.execute("UPDATE articles SET title = ?, body = ? WHERE id=?",(title,body,id))
 
-        cur.execute("UPDATE articles SET title = %s, body = %s WHERE id=%s",(title,body,id))
-
-        mysql.connection.commit()
-
-        cur.close()
+        con.commit()
+        con.close()
 
         flash("Article Updated","success")
 
@@ -239,13 +274,11 @@ def edit_article(id):
 @is_logged_in
 def delete_article(id):
     #Create cursor
-    cur = mysql.connection.cursor()
-
-    cur.execute("DELETE from articles where id=%s",[id])
-
-    mysql.connection.commit()
-
-    cur.close()
+    con = sqlite3.connect("articlezone.db") 
+    cur = con.cursor()
+    cur.execute("DELETE from articles where id=?",[id])
+    con.commit()
+    con.close()
 
     flash("Article Deleted","success")
 
