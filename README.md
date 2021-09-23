@@ -39,7 +39,7 @@ virtualenv env
 
 ## Activate virtual environment 
 ```
-source env/Scripts/activate
+env/Scripts/activate
 ```
 
 ## Install the dependencies
