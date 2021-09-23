@@ -98,10 +98,10 @@ class RegisterForm(Form):
     confirm = PasswordField('Confirm Password')
 
 #User Register
-@app.route('/register', methods = ['GET','POST'])
+@app.route('/register', methods = ["GET","POST"])
 def register():
     form = RegisterForm(request.form)
-    if request.method == 'POST' and form.validate():
+    if request.method == "POST" and form.validate():
         name = form.name.data
         email = form.email.data
         username = form.username.data
@@ -119,9 +119,9 @@ def register():
     return render_template('register.html',form = form)
 
 # User Login
-@app.route('/login', methods = ['GET','POST'])
+@app.route('/login', methods = ["GET","POST"])
 def login():
-    if request.method == 'POST':
+    if request.method == "POST":
         # Get Form Fields
         username = request.form['username']
         password_candidate = request.form['password']
