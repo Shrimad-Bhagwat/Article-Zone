@@ -47,17 +47,8 @@ source env/bin/activate
 pip install -r requirements.txt
 ```
 
-## Check migrations.
-```
-python manage.py makemigrations
-```
-
-## Apply migrations.
-```
-python manage.py migrate
-```
-
 ## Starting the application
 ```
-python manage.py runserver
+python main.py
 ```
+or `python [name_of_file].py`
